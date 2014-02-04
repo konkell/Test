@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<%a5
+
+
+dim __componentType as c = default ""
+dim __componentAlias as c = default ""
+dim harvestScript as c = ""
+if __componentType = "dialog2" .or. __componentType = "odialog2" then 
+	harvestScript = <<%txt%
+var otherData = window.parent.{__alias__}_DlgObj.harvest();
+$('OTHERVARIABLEVALUES').value = otherData;
+%txt%
+	
+	harvestScript = stritran(harvestScript,"{__alias__}",ut(__componentAlias))
+end if 
+
+
+dim fileUploadURL as c = default ""
+dim fileUploadAutoUpload as c = default "false"
+dim fileUploadAllowMultiple as c = default "false"  'change back to false
+dim fileUploadText as c = default ""
+dim stylesheetName as c = default ""
+dim uploadButtonLabel as c = default "Upload"
+dim filePromptSingular as c = default "File:"
+
+dim filePromptPlural as c = default "Files:"
+dim removeButton as c = default "Remove"
+dim fileUploadWaitMessage as c = default "<img src=\"CSS/A5System/Images/wait.gif\" /> Uploading files..."
+
+dim fileSelectImg as c = default "images/$$folder.open.png.a5image"
+dim fileBoxWaterMark as c = default "Click button to select file..."
+dim computedFileUploadButton as c = ""
+if .not. convert_type(fileUploadAutoUpload,"L") then
+	computedFileUploadButton = <<%txt%
+	<button type=\"button\" style=\"display:none;\" class="{stylesheetName}Button" onclick="A5.fileUpload.upload();">{uploadButtonLabel}</button>
+%txt%
+	computedFileUploadButton = stritran(computedFileUploadButton,"{stylesheetName}",stylesheetName)
+	computedFileUploadButton = stritran(computedFileUploadButton,"{uploadButtonLabel}",uploadButtonLabel)
+end if
+'the upload button is in the toolbar now
+computedFileUploadButton = ""
+
+
+
+
+if eval_valid("Request.Query_String") then
+	dim qStr as c = "&"+Request.Query_String+"&"
+else
+	dim qStr as c = ""
+end if
+
+qStr = strtran_smatch(qStr,"&fileUploadURL=*&","&")
+qStr = strtran_smatch(qStr,"&fileUploadAllowMultiple=*&","&")
+qStr = strtran_smatch(qStr,"&fileUploadMessage=*&","&")
+qStr = rtrim(ltrim(qStr,"&"),"&")
+qStr = stritran(qStr,"\"","%22")
+
+if at("?",fileUploadURL) > 0 then
+	fileUploadURL = fileUploadURL+"&"+qStr
+else
+	fileUploadURL = fileUploadURL+"?"+qStr
+end if
+
+if fileUploadText = "" then
+	if convert_type(fileUploadAllowMultiple,"L") then
+		fileUploadText =  filePromptPlural+"<br/>"
+	else
+		fileUploadText = filePromptSingular+"<br/>"
+	end if
+else
+	fileUploadText = fileUploadText+"<br/>"
+end if
+
+
+
+%>
+<html>
+<head>
+<meta name="generator" content="Alpha Five HTML Editor Version 12 Build 1856-4237">
+<!-- must use in order to make XP Themes render -->
+<meta HTTP-EQUIV="MSThemeCompatible" content="Yes" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title></title>
+<script type="text/javascript" src="javascript/core.js"></script>
+<script type="text/javascript">
+
+if(typeof A5 == 'undefined') A5 = new Object();
+delete A5.fileUpload;
+A5.fileUpload = {
+	fileInc: 0,
+	autoUpload: <%a5 ? iif(convert_type(fileUploadAutoUpload,"L"),"true","false") %>,
+	allowMultiple: <%a5 ? iif(convert_type(fileUploadAllowMultiple,"L"),"true","false") %>,
+	className: '<%a5 ?stylesheetName %>Input <%a5 ?stylesheetName %>Edit',
+	blankText: '<%a5  ?js_escape(*html_unescape(fileBoxWaterMark,"U"),"U") %>',
+	removeText: '<%a5 ?js_escape(*html_unescape(removeButton,"U"),"U")  %>',
+	buttonImage: '<%a5 ?fileSelectImg %>',
+	add: function(){
+		this.fileInc++;
+		var fEle = $('FileUpload');
+		var dEle = document.createElement('div');
+		dEle.id = 'File'+this.fileInc+'.CONTAINER';
+		dEle.style.marginBottom = '2px';
+		var sEle = document.createElement('span');
+		sEle.style.display = 'inline-block';
+		sEle.style.position = 'relative';
+		sEle.style.textAlign = 'right';
+		sEle.style.width = '3.5in';
+
+		sEle.className = this.className;
+		dEle.appendChild(sEle);
+
+		var fiEle = document.createElement('input');
+		fiEle.id = 'File'+this.fileInc+'.TEXT';
+		$ss(fiEle,'position: absolute; left: 2px; width: 100%; border: none; background: transparent; opacity: .5; filter: alpha(opacity=50);');
+		fiEle.value = this.blankText;
+		sEle.appendChild(fiEle);
+
+		if(this.buttonImage != ''){
+			var bEle = document.createElement('div');
+			$ss(bEle,'position: absolute; right: 0px; top: 0px; padding: 3px;');
+			bEle.innerHTML = '<img src="'+this.buttonImage+'" />';
+			sEle.appendChild(bEle);
+		}
+
+		var iEle = document.createElement('input');
+		iEle.type = 'file';
+		iEle.id = 'File'+this.fileInc;
+		iEle.name = 'File'+this.fileInc;
+		iEle.style.position = 'relative';
+		iEle.style.cursor = 'pointer';
+		iEle.style.opacity = '0';
+
+		iEle.style.filter = 'alpha(opacity=0)';
+		$e.add(iEle,'change',this._change,this);
+		sEle.appendChild(iEle);
+
+		if(this.allowMultiple){
+			dEle.appendChild(document.createTextNode(' '));
+			var rfEle = document.createElement('a');
+			rfEle.href = '#';
+			rfEle.innerHTML = this.removeText;
+			rfEle.style.visibility = 'hidden';
+			rfEle.className = '<%a5 ?stylesheetName %>Link';
+			$sa(rfEle,'FileIndex',''+this.fileInc);
+			
+			$e.add(rfEle,'click',this._remove,this);
+			dEle.appendChild(rfEle);
+		}
+		fEle.appendChild(dEle);
+	},
+	remove: function(indx){
+		var fEle = $('FileUpload');
+		if($('File'+indx+'.CONTAINER') != fEle.lastChild){
+			fEle.removeChild($('File'+indx+'.CONTAINER'));
+			if(fEle.childNodes.length == 1) this.add();
+		}
+	},
+	_remove: function(e,classInst){
+		$e.stopEvent(e);
+		var indx = Number($ga(this,'FileIndex'));
+		if(indx > 0) classInst.remove(indx);
+		return false;
+	},
+	_change: function(e,classInst){
+		var fEle = $('FileUpload');
+		if(classInst.allowMultiple){
+			this.parentNode.parentNode.lastChild.style.visibility = '';
+			if(fEle.lastChild.firstChild.lastChild.value != '') classInst.add();
+		}
+		var fiEle = $(this.id+'.TEXT');
+		if(this.value != ''){
+			var tVal = this.value;
+			fiEle.value = tVal.split('\\').pop();
+			fiEle.style.opacity = '';
+			fiEle.style.filter = '';
+			if(classInst.autoUpload) classInst.upload();
+		} else{
+			fiEle.value = classInst.blankText;
+			fiEle.style.opacity = '.5';
+			fiEle.style.filter = 'alpha(opacity=50)';
+		}
+	},
+	upload: function() {
+		var ftuEle = $('filesToUpload');
+		var ftuArr = new Array();
+		for(var i=1;i<=this.fileInc;i++){
+			if($('File'+i)){
+				if($gvs('File'+i) != '') ftuArr.push(i);
+			}
+		}
+		ftuEle.value = ftuArr.join(',');
+
+		if(ftuArr.length > 0) {
+			$('UPLOADMESSAGE').style.display = '';
+			$('UPLOADFORM').style.display = 'none';
+			setTimeout(function() { $('FileUpload').submit(); } ,1);
+		}
+	}
+
+}
+</script>
+<link rel="stylesheet" type="text/css" href="css/<%a5 ?stylesheetName %>/style.css">
+</head>
+<body onload="A5.fileUpload.add();" class="<%a5 ?stylesheetName %>PageBody <%a5 ?stylesheetName %>Page">
+<div id="UPLOADFORM">
+<%a5 ?fileUploadText %>
+<form id="FileUpload" action="<%a5 ?fileUploadURL %>" method="post" enctype="multipart/form-data">
+<input type="hidden" id="filesToUpload" class="<%a5 ?stylesheetName %>Button" name="filesToUpload"/>
+<input type="hidden" id="OTHERVARIABLEVALUES" name="__otherFormData" />
+</form>
+<script>
+<%a5 ?harvestScript   %>
+</script>
+<br/>
+<%a5 ?computedFileUploadButton %>
+</div>
+<div style="display:none;" id="UPLOADMESSAGE"><%a5 ?fileUploadWaitMessage %></div>
+</body></html>
